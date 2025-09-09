@@ -69,6 +69,8 @@ const encryptTripleDES = (i, e, t = "[]") => {
   });
   return encrypted.toString();
 };
+window.getVerifyKey = getVerifyKey;
+window.getVerifyKeyIv = getVerifyKeyIv;
 window.encryptTripleDES = encryptTripleDES;
 
 // 创建一个盒子按钮加在body右下角 里面接受按钮数组

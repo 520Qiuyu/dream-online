@@ -158,10 +158,15 @@ const checkRobot = async () => {
       }
     );
     const data = await res.json();
+    return data.data.data;
   } catch (error) {
     console.log("error", error);
   }
 };
+
+// 验证码轨迹
+const VERIFY_TRAJECTORY =
+  "[[96,0],[97,146],[99,196],[108,252],[123,310],[124,361],[149,416],[152,466],[162,516],[174,575],[181,626],[188,677],[193,729],[196,779],[205,830],[206,889],[209,941],[213,991],[224,1043],[225,1097],[228,1149],[229,1208],[232,1259],[234,1310],[235,1360],[236,1411],[237,1461],[239,1513],[240,1576],[241,1894],[242,1944],[243,2043],[237,0]]";
 
 // 开始任务
 const startTask_watchVideo = async () => {
@@ -171,8 +176,7 @@ const startTask_watchVideo = async () => {
     console.log("获取用户信息");
     const userInfo = await getUserInfo();
     console.log("用户信息", userInfo);
-    const key = encryptTripleDES(getVerifyKey(), getVerifyKeyIv(userInfo.userId));
-    console.log("key", key);
+
     // 获取所有学期
     const semesterList = await getAllSemester();
     // 答应获取到的学期
@@ -237,45 +241,52 @@ const startTask_watchVideo = async () => {
           // 打印当前课程
           console.log("当前课程", courseWithTeachingList[j]);
           // 获取当前课程的所有视频
-          const { videoList } = await getAllVideo(courseDictId, videoPackageId, id);
+          const { videoList, pem } = await getAllVideo(courseDictId, videoPackageId, id);
+          const key = encryptTripleDES(
+            getVerifyKey({ pem }),
+            getVerifyKeyIv(userInfo.userId),
+            VERIFY_TRAJECTORY
+          );
+          console.log("key", key);
           // 打印当前课程的所有视频
           console.log("当前课程的所有视频", videoList);
           // 保存视频记录
-          /* // 遍历当前课程的所有视频
-            for (let k = 0; k < videoList.length; k++) {
-              const { videoId, duration, videoName } = videoList[k];
-              await checkRobot();
-              saveStudyRecord(
-                videoId,
-                courseDictId,
-                videoPackageId,
-                id,
-                duration,
-                duration,
-                key
-              ).then(res => {
-                console.log("res", res);
-                if (res.code === 200) {
-                  console.log(videoName, "：保存视频记录成功");
-                }
-              });
-            } */
-          videoList.forEach(async item => {
-            const { videoId, duration, watchTime, videoName } = item;
+          // 遍历当前课程的所有视频
+          for (let k = 0; k < videoList.length; k++) {
+            const { videoId, duration, videoName } = videoList[k];
+            await checkRobot();
             saveStudyRecord(
               videoId,
               courseDictId,
               videoPackageId,
               id,
-              watchTime,
               duration,
+              duration,
+              key
+            ).then(res => {
+              console.log("res", res);
+              if (res.code === 200) {
+                console.log(videoName, "：保存视频记录成功");
+              }
+            });
+          }
+          /* videoList.forEach(async item => {
+            const { videoId, duration, watchTime, videoName } = item;
+            await checkRobot();
+            await saveStudyRecord(
+              videoId,
+              courseDictId,
+              videoPackageId,
+              id,
+              Math.floor(duration),
+              Math.floor(duration),
               key
             ).then(res => {
               if (res.code === 200) {
                 console.log(videoName, "：保存视频记录成功");
               }
             });
-          });
+          }); */
         }
       } else {
         console.log("当前不在当前学期时间范围内");
